@@ -21,7 +21,7 @@ public final class SighRunner
 {
     // ---------------------------------------------------------------------------------------------
 
-    private final SighGrammar grammar = new SighGrammar();
+    private final GrammarProj grammar = new GrammarProj();
 
     private final ParseOptions parseOptions = ParseOptions.builder()
             .wellFormednessCheck(false)
