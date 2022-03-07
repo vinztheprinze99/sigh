@@ -107,6 +107,10 @@ public class BytecodeCompiler
         visitor.register(FieldDeclarationNode.class,     this::fieldDecl);
         visitor.register(ParameterNode.class,            this::parameter);
         visitor.register(FunDeclarationNode.class,       this::funDecl);
+        // Prolog
+        visitor.register(DefDeclarationNode.class,       this::defDecl);
+
+
         visitor.register(StructDeclarationNode.class,    this::structDecl);
 
         // statements
@@ -228,6 +232,37 @@ public class BytecodeCompiler
         // analysis.
         if (descriptor.endsWith("V"))
             method.visitInsn(RETURN);
+
+        method.visitEnd();
+        method.visitMaxs(-1, -1);
+
+        method = surroundingMethod;
+        variableCounter = surroundingVariableCounter;
+        topLevel = surroundingIsTopLevel;
+        return null;
+    }
+
+    // Prolog def declaration
+
+    private Object defDecl (DefDeclarationNode node)
+    {
+        int surroundingVariableCounter = variableCounter;
+        MethodVisitor surroundingMethod = method;
+        boolean surroundingIsTopLevel = topLevel;
+
+        variableCounter = 0;
+        topLevel = false;
+        node.parameters.forEach(this::run);
+
+        method = container.visitMethod(ACC_PUBLIC | ACC_STATIC, node.name, null,null, null);
+        method.visitCode();
+
+
+        // NOTE: The current semantic analysis check guarantee that there is we unconditionally
+        // return. So we do not have to worry about instructions not followed by a return.
+        // The only exception is for void methods - so we always add a return at the end in that
+        // case. In the future, it might be good to check that nothing follows a return in semantic
+        // analysis
 
         method.visitEnd();
         method.visitMaxs(-1, -1);
