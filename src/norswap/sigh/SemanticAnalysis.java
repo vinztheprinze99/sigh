@@ -136,6 +136,10 @@ public final class SemanticAnalysis
         walker.register(FunDeclarationNode.class,       PRE_VISIT,  analysis::funDecl);
         walker.register(StructDeclarationNode.class,    PRE_VISIT,  analysis::structDecl);
 
+        // Declaration of prolog
+        walker.register(DefDeclarationNode.class,       PRE_VISIT,  analysis::defDecl);
+        walker.register(DefDeclarationNode.class,       POST_VISIT, analysis::popScope);
+
         walker.register(RootNode.class,                 POST_VISIT, analysis::popScope);
         walker.register(BlockNode.class,                POST_VISIT, analysis::popScope);
         walker.register(FunDeclarationNode.class,       POST_VISIT, analysis::popScope);
@@ -881,6 +885,31 @@ public final class SemanticAnalysis
                 }
             });
     }
+
+    // Prolog implementation
+    private void defDecl (DefDeclarationNode node)
+    {
+        scope.declare(node.name, node);
+        scope = new Scope(node, scope);
+        R.set(node, "scope", scope);
+
+
+
+        Attribute[] dependencies = new Attribute[node.parameters.size()];
+        forEachIndexed(node.parameters, (i, param) ->
+                dependencies[i] = param.attr("type"));
+
+        R.rule(node, "type")
+                .using(dependencies)
+                .by (r -> {
+                    Type[] paramTypes = new Type[node.parameters.size()];
+                    for (int i = 0; i < paramTypes.length; ++i)
+                        paramTypes[i] = r.get(i);
+                    r.set(0, new DefType(paramTypes));
+                });
+    }
+
+
 
     // ---------------------------------------------------------------------------------------------
 

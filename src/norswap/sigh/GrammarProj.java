@@ -57,6 +57,12 @@ public class GrammarProj extends Grammar {
     public rule _while = reserved("while");
     public rule _return = reserved("return");
 
+
+    // ========================= Lexical : Prolog project ====================================
+
+
+    // ===================================================
+
     public rule number = seq(opt('-'), choice('0', digit.at_least(1)));
 
     public rule integer = number
@@ -240,6 +246,17 @@ public class GrammarProj extends Grammar {
     public rule root = seq(ws, statement.at_least(1))
             .as_list(StatementNode.class)
             .push($ -> new RootNode($.span(), $.$[0]));
+
+    // Rules for prolog
+    // def animal ( name : String )
+
+    public rule _def = reserved("def");
+
+    public rule parameters_at_least_one = parameter.sep(1, COMMA)
+            .as_list(ParameterNode.class);
+
+    public rule def_decl = seq(_def, identifier, LPAREN, parameters_at_least_one, RPAREN)
+            .push($ -> new DefDeclarationNode($.span(), $.$[0], $.$[1]));
 
     @Override
     public rule root() {
