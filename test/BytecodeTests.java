@@ -2,7 +2,7 @@ import norswap.autumn.Autumn;
 import norswap.autumn.ParseOptions;
 import norswap.autumn.ParseResult;
 import norswap.sigh.SemanticAnalysis;
-import norswap.sigh.SighGrammar;
+import norswap.sigh.GrammarProj;
 import norswap.sigh.ast.SighNode;
 import norswap.sigh.bytecode.ByteArrayClassLoader;
 import norswap.sigh.bytecode.BytecodeCompiler;
@@ -28,7 +28,7 @@ public class BytecodeTests
      */
     public void check (String input, String expected)
     {
-        SighGrammar grammar = new SighGrammar();
+        GrammarProj grammar = new GrammarProj();
         ParseOptions options = ParseOptions.builder().recordCallStack(true).get();
         ParseResult parseResult = Autumn.parse(grammar.root, input, options);
         if (!parseResult.fullMatch) throw new AssertionError(parseResult.toString());

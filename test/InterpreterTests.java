@@ -4,7 +4,7 @@ import norswap.autumn.Grammar.rule;
 import norswap.autumn.ParseResult;
 import norswap.autumn.positions.LineMapString;
 import norswap.sigh.SemanticAnalysis;
-import norswap.sigh.SighGrammar;
+import norswap.sigh.GrammarProj;
 import norswap.sigh.ast.SighNode;
 import norswap.sigh.interpreter.Interpreter;
 import norswap.sigh.interpreter.Null;
@@ -27,7 +27,7 @@ public final class InterpreterTests extends TestFixture {
 
     // ---------------------------------------------------------------------------------------------
 
-    private final SighGrammar grammar = new SighGrammar();
+    private final GrammarProj grammar = new GrammarProj();
     private final AutumnTestFixture autumnFixture = new AutumnTestFixture();
 
     {
