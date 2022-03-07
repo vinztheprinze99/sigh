@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 // === PLUGINS =====================================================================================
 
 plugins {
@@ -68,6 +70,17 @@ dependencies {
     implementation("com.norswap:uranium:1.0.9-ALPHA")
     implementation("org.ow2.asm:asm-all:5.2")
     testImplementation("org.testng:testng:6.14.3")
+    implementation(kotlin("stdlib-jdk8"))
 }
 
 // =================================================================================================
+
+
+val compileKotlin: KotlinCompile by tasks
+compileKotlin.kotlinOptions {
+    jvmTarget = "1.8"
+}
+val compileTestKotlin: KotlinCompile by tasks
+compileTestKotlin.kotlinOptions {
+    jvmTarget = "1.8"
+}
