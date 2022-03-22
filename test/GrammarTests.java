@@ -107,6 +107,12 @@ public class GrammarTests extends AutumnTestFixture {
                 asList(new ParameterNode(null, "x", new SimpleTypeNode(null, "Int"))),
                 new SimpleTypeNode(null, "Int"),
                 new BlockNode(null, asList(new ReturnNode(null, intlit(1))))));
+
+        // Test for def declaration
+
+        successExpect("def animal(name: String)", new DefDeclarationNode(null, "animal",
+            asList(new ParameterNode(null, "name", new SimpleTypeNode(null, "String")))));
+
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -138,4 +144,5 @@ public class GrammarTests extends AutumnTestFixture {
     }
 
     // ---------------------------------------------------------------------------------------------
+
 }

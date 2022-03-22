@@ -200,6 +200,7 @@ public class GrammarProj extends Grammar {
             this.block,
             this.var_decl,
             this.fun_decl,
+            this.def_decl,
             this.struct_decl,
             this.if_stmt,
             this.while_stmt,
