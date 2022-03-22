@@ -56,6 +56,8 @@ public class GrammarProj extends Grammar {
     public rule _else = reserved("else");
     public rule _while = reserved("while");
     public rule _return = reserved("return");
+    public rule _def = reserved("def");
+    public rule _fact = reserved("fact");
 
 
     // ========================= Lexical : Prolog project ====================================
@@ -244,20 +246,28 @@ public class GrammarProj extends Grammar {
     public rule return_stmt = seq(_return, expression.or_push_null())
             .push($ -> new ReturnNode($.span(), $.$[0]));
 
-    public rule root = seq(ws, statement.at_least(1))
-            .as_list(StatementNode.class)
-            .push($ -> new RootNode($.span(), $.$[0]));
-
     // Rules for prolog
     // def animal ( name : String )
-
-    public rule _def = reserved("def");
 
     public rule parameters_at_least_one = parameter.sep(1, COMMA)
             .as_list(ParameterNode.class);
 
     public rule def_decl = seq(_def, identifier, LPAREN, parameters_at_least_one, RPAREN)
             .push($ -> new DefDeclarationNode($.span(), $.$[0], $.$[1]));
+
+    // fact animal("cat")
+    // fact is_parent("Father", "son")
+
+    public rule expressions_at_least_one = lazy(() -> this.expression.sep(1, COMMA)
+        .as_list(ExpressionNode.class));
+    public rule fact_args = seq(LPAREN, expressions_at_least_one, RPAREN);
+
+    public rule fact_call = seq(_fact, reference, fact_args)
+        .push($ -> new FactCallNode($.span(), $.$[0], $.$[1]));
+
+    public rule root = seq(ws, statement.at_least(1))
+        .as_list(StatementNode.class)
+        .push($ -> new RootNode($.span(), $.$[0]));
 
     @Override
     public rule root() {

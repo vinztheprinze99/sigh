@@ -124,6 +124,8 @@ public class GrammarTests extends AutumnTestFixture {
         successExpect("return 1", new ReturnNode(null, intlit(1)));
         successExpect("print(1)", new ExpressionStatementNode(null,
             new FunCallNode(null, new ReferenceNode(null, "print"), asList(intlit(1)))));
+        successExpect("fact animal(1)", new FactCallNode(null, new ReferenceNode(null, "animal"),
+            asList(intlit(1))));
         successExpect("{ return }", new BlockNode(null, asList(new ReturnNode(null, null))));
 
 
