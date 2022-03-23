@@ -444,51 +444,6 @@ public final class SemanticAnalysis
 
     // ---------------------------------------------------------------------------------------------
 
-    private void factCall (FactCallNode node)
-    {
-        this.inferenceContext = node;
-
-        Attribute[] dependencies = new Attribute[node.arguments.size()];
-        forEachIndexed(node.arguments, (i, arg) -> {
-            dependencies[i] = arg.attr("type");
-            R.set(arg, "index", i);
-        });
-
-        R.rule(node, "type")
-            .using(dependencies)
-            .by(r -> {
-                Type maybeDefType = r.get(0);
-
-                if (!(maybeDefType instanceof DefType)) {
-                    r.error("trying to call a non-function expression: " + node.def, node.def);
-                    return;
-                }
-
-                DefType defType = cast(maybeDefType);
-                Type[] params = defType.paramTypes;
-                List<ExpressionNode> args = node.arguments;
-
-                if (params.length != args.size())
-                    r.errorFor(format("wrong number of arguments, expected %d but got %d",
-                            params.length, args.size()),
-                        node);
-
-                int checkedArgs = Math.min(params.length, args.size());
-
-                for (int i = 0; i < checkedArgs; ++i) {
-                    Type argType = r.get(i);
-                    Type paramType = defType.paramTypes[i];
-                    if (!isAssignableTo(argType, paramType))
-                        r.errorFor(format(
-                                "incompatible argument provided for argument %d: expected %s but got %s",
-                                i, paramType, argType),
-                            node.arguments.get(i));
-                }
-            });
-    }
-
-    // ---------------------------------------------------------------------------------------------
-
     private void unaryExpression (UnaryExpressionNode node)
     {
         assert node.operator == UnaryOperator.NOT; // only one for now
@@ -951,8 +906,51 @@ public final class SemanticAnalysis
                     r.set(0, new DefType(paramTypes));
                 });
     }
+    
+    // ---------------------------------------------------------------------------------------------
 
+    private void factCall (FactCallNode node)
+    {
+        this.inferenceContext = node;
 
+        Attribute[] dependencies = new Attribute[node.arguments.size()];
+        forEachIndexed(node.arguments, (i, arg) -> {
+            dependencies[i] = arg.attr("type");
+            R.set(arg, "index", i);
+        });
+
+        R.rule(node, "type")
+            .using(dependencies)
+            .by(r -> {
+                Type maybeDefType = r.get(0);
+                System.out.println(maybeDefType.getClass());
+                if (!(maybeDefType instanceof DefType)) {
+                    r.error("trying to call a non-fact expression: " + node.def, node.def);
+                    return;
+                }
+
+                DefType defType = cast(maybeDefType);
+                Type[] params = defType.paramTypes;
+                List<ExpressionNode> args = node.arguments;
+
+                if (params.length != args.size())
+                    r.errorFor(format("wrong number of arguments, expected %d but got %d",
+                            params.length, args.size()),
+                        node);
+
+                int checkedArgs = Math.min(params.length, args.size());
+
+                for (int i = 0; i < checkedArgs; ++i) {
+                    Type argType = r.get(i);
+                    Type paramType = defType.paramTypes[i];
+                    if (!isAssignableTo(argType, paramType))
+                        r.errorFor(format(
+                                "incompatible argument provided for argument %d: expected %s but got %s",
+                                i, paramType, argType),
+                            node.arguments.get(i));
+                }
+            });
+    }
 
     // ---------------------------------------------------------------------------------------------
 

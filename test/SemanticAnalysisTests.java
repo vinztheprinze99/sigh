@@ -194,6 +194,9 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
             "fun add (a: Int, b: Int): Int { return a + b } " +
             "return add(4, 7)");
 
+        successInput("def animal(name: String)"+
+            "fact animal(\"cat\")");
+
         successInput(
             "struct Point { var x: Int; var y: Int }" +
             "return $Point(1, 2)");

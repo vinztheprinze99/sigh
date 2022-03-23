@@ -1,3 +1,6 @@
 def animal(name: String)
 def person(name: String)
 def pet(person: String, animal: String)
+
+fact animal("cat")
+
