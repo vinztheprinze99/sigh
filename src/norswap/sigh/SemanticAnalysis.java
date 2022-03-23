@@ -914,9 +914,10 @@ public final class SemanticAnalysis
     {
         this.inferenceContext = node;
 
-        Attribute[] dependencies = new Attribute[node.arguments.size()];
+        Attribute[] dependencies = new Attribute[node.arguments.size() + 1];
+        dependencies[0] = node.def.attr("type");
         forEachIndexed(node.arguments, (i, arg) -> {
-            dependencies[i] = arg.attr("type");
+            dependencies[i+1] = arg.attr("type");
             R.set(arg, "index", i);
         });
 
@@ -925,13 +926,14 @@ public final class SemanticAnalysis
             .by(r -> {
                 Type maybeDefType = r.get(0);
                 System.out.println(maybeDefType.getClass());
-                System.out.println(maybeDefType);
                 if (!(maybeDefType instanceof DefType)) {
                     r.error("trying to call a non-fact expression: " + node.def, node.def);
                     return;
                 }
 
                 DefType defType = cast(maybeDefType);
+
+                r.set(0, defType.paramTypes[0]);
                 Type[] params = defType.paramTypes;
                 List<ExpressionNode> args = node.arguments;
 
@@ -943,7 +945,7 @@ public final class SemanticAnalysis
                 int checkedArgs = Math.min(params.length, args.size());
 
                 for (int i = 0; i < checkedArgs; ++i) {
-                    Type argType = r.get(i);
+                    Type argType = r.get(i +1);
                     Type paramType = defType.paramTypes[i];
                     if (!isAssignableTo(argType, paramType))
                         r.errorFor(format(

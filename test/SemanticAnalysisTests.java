@@ -194,8 +194,8 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
             "fun add (a: Int, b: Int): Int { return a + b } " +
             "return add(4, 7)");
 
-        successInput("def animal(name: String)"+
-            "fact animal(\"cat\")");
+        successInput("def animal(name: String, legs : Int)"+
+            "fact animal(\"cat\",4)");
 
         successInput(
             "struct Point { var x: Int; var y: Int }" +
@@ -204,6 +204,10 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
         successInput("var str: String = null; return print(str + 1)");
 
         failureInputWith("return print(1)", "argument 0: expected String but got Int");
+        failureInputWith("def animal(name: String, legs : Int)"+
+            "fact animal(\"cat\")", "wrong number of arguments, expected 2 but got 1");
+        failureInputWith("def animal(name: String, legs : Int)"+
+            "fact animal(\"cat\", \"dog\")", "argument 1: expected Int but got String");
     }
 
     // ---------------------------------------------------------------------------------------------
