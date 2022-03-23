@@ -906,7 +906,7 @@ public final class SemanticAnalysis
                     r.set(0, new DefType(paramTypes));
                 });
     }
-    
+
     // ---------------------------------------------------------------------------------------------
 
     private void factCall (FactCallNode node)
@@ -924,6 +924,7 @@ public final class SemanticAnalysis
             .by(r -> {
                 Type maybeDefType = r.get(0);
                 System.out.println(maybeDefType.getClass());
+                System.out.println(maybeDefType);
                 if (!(maybeDefType instanceof DefType)) {
                     r.error("trying to call a non-fact expression: " + node.def, node.def);
                     return;
