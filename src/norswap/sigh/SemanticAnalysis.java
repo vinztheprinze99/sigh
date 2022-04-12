@@ -228,34 +228,34 @@ public final class SemanticAnalysis
     private void constructor (ConstructorNode node)
     {
         R.rule()
-        .using(node.ref, "decl")
-        .by(r -> {
-            DeclarationNode decl = r.get(0);
+                .using(node.ref, "decl")
+                .by(r -> {
+                    DeclarationNode decl = r.get(0);
 
-            if (!(decl instanceof StructDeclarationNode)) {
-                String description =
-                        "Applying the constructor operator ($) to non-struct reference for: "
-                        + decl;
-                r.errorFor(description, node, node.attr("type"));
-                return;
-            }
+                    if (!(decl instanceof StructDeclarationNode)) {
+                        String description =
+                                "Applying the constructor operator ($) to non-struct reference for: "
+                                        + decl;
+                        r.errorFor(description, node, node.attr("type"));
+                        return;
+                    }
 
-            StructDeclarationNode structDecl = (StructDeclarationNode) decl;
+                    StructDeclarationNode structDecl = (StructDeclarationNode) decl;
 
-            Attribute[] dependencies = new Attribute[structDecl.fields.size() + 1];
-            dependencies[0] = decl.attr("declared");
-            forEachIndexed(structDecl.fields, (i, field) ->
-                dependencies[i + 1] = field.attr("type"));
+                    Attribute[] dependencies = new Attribute[structDecl.fields.size() + 1];
+                    dependencies[0] = decl.attr("declared");
+                    forEachIndexed(structDecl.fields, (i, field) ->
+                            dependencies[i + 1] = field.attr("type"));
 
-            R.rule(node, "type")
-            .using(dependencies)
-            .by(rr -> {
-                Type structType = rr.get(0);
-                Type[] params = IntStream.range(1, dependencies.length).<Type>mapToObj(rr::get)
-                        .toArray(Type[]::new);
-                rr.set(0, new FunType(structType, params));
-            });
-        });
+                    R.rule(node, "type")
+                            .using(dependencies)
+                            .by(rr -> {
+                                Type structType = rr.get(0);
+                                Type[] params = IntStream.range(1, dependencies.length).<Type>mapToObj(rr::get)
+                                        .toArray(Type[]::new);
+                                rr.set(0, new FunType(structType, params));
+                            });
+                });
     }
 
     // ---------------------------------------------------------------------------------------------

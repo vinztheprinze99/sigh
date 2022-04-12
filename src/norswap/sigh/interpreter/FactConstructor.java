@@ -2,16 +2,17 @@ package norswap.sigh.interpreter;
 
 import norswap.sigh.ast.*;
 
+
 /**
  * Class representing structure constructors in the interpreter, simply wrapping the declaration
  * node. Such a wrapper is necessary, because the node is already used to represent the structure
  * type.
  */
-public final class Constructor
+public final class FactConstructor
 {
-    public final StructDeclarationNode declaration;
+    public final FactDeclarationNode declaration;
 
-    public Constructor (StructDeclarationNode declaration) {
+    public FactConstructor (FactDeclarationNode declaration) {
         this.declaration = declaration;
     }
 
@@ -20,6 +21,6 @@ public final class Constructor
     }
 
     @Override public boolean equals (Object other) {
-        return other instanceof Constructor && ((Constructor) other).declaration == declaration;
+        return other instanceof FactConstructor && ((FactConstructor) other).declaration == declaration;
     }
 }
