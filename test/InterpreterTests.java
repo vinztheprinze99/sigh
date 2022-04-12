@@ -219,7 +219,7 @@ public final class InterpreterTests extends TestFixture {
         // implicit conversions
         check("var x: Float = 1; x = 2; return x", 2.0d);
     }
-
+    
     // ---------------------------------------------------------------------------------------------
 
     @Test
@@ -261,6 +261,7 @@ public final class InterpreterTests extends TestFixture {
             point);
 
         check("var str: String = null; return print(str + 1)", "null1", "null1\n");
+
     }
 
     // ---------------------------------------------------------------------------------------------

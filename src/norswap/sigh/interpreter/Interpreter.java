@@ -14,13 +14,11 @@ import norswap.utils.Util;
 import norswap.utils.exceptions.Exceptions;
 import norswap.utils.exceptions.NoStackException;
 import norswap.utils.visitors.ValuedVisitor;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.*;
 
 import static norswap.utils.Util.cast;
-import static norswap.utils.Vanilla.coIterate;
-import static norswap.utils.Vanilla.map;
+import static norswap.utils.Vanilla.*;
 
 /**
  * Implements a simple but inefficient interpreter for Sigh.
@@ -76,6 +74,10 @@ public final class Interpreter
         visitor.register(BinaryExpressionNode.class,     this::binaryExpression);
         visitor.register(AssignmentNode.class,           this::assignment);
 
+        // Prolog statement
+        visitor.register(FactCallNode.class,              this::factCall);
+        visitor.register(ConstructorFactNode.class,       this::factConstructor);
+
         // statement groups & declarations
         visitor.register(RootNode.class,                 this::root);
         visitor.register(BlockNode.class,                this::block);
@@ -90,6 +92,7 @@ public final class Interpreter
 
         visitor.registerFallback(node -> null);
     }
+
 
     // ---------------------------------------------------------------------------------------------
 
@@ -431,6 +434,50 @@ public final class Interpreter
 
     // ---------------------------------------------------------------------------------------------
 
+    private Void varDecl (VarDeclarationNode node)
+    {
+        Scope scope = reactor.get(node, "scope");
+        assign(scope, node.name, get(node.initializer), reactor.get(node, "type"));
+        return null;
+    }
+
+    // Prolog statement
+
+    private Void factCall (FactCallNode node)
+    {
+        // get declaration and arguments
+        Object decl = get(node.def);
+        node.arguments.forEach(this::run);
+        Object[] args = map(node.arguments, new Object[0], visitor);
+
+        ReferenceNode r = (ReferenceNode)node.def;
+        String keyValue = r.name;
+
+        HashMap<String,Object> toStore = buildFact(((FactConstructor) decl).declaration, args);
+        // Gonna store the value of the fact to futur question
+        ScopeStorage oldStorage = storage;
+        Scope scope = reactor.get(decl, "scope");
+        storage = new ScopeStorage(scope, storage);
+        storage.setExist(scope, keyValue, toStore);
+        return null;
+    }
+
+    private HashMap<String, Object> buildFact (FactDeclarationNode node, Object[] args)
+    {
+        HashMap<String, Object> node_declaration = new HashMap<>();
+        for (int i = 0; i < node.fields.size(); ++i)
+            node_declaration.put(node.fields.get(i).name, args[i]);
+        return node_declaration;
+    }
+
+    private Constructor factConstructor (ConstructorFactNode node) {
+        // guaranteed safe by semantic analysis
+        return new Constructor(get(node.ref));
+    }
+
+
+    // ---------------------------------------------------------------------------------------------
+
     private Object builtin (String name, Object[] args)
     {
         assert name.equals("print"); // only one at the moment
@@ -458,6 +505,8 @@ public final class Interpreter
     }
 
     // ---------------------------------------------------------------------------------------------
+
+
 
     private HashMap<String, Object> buildStruct (StructDeclarationNode node, Object[] args)
     {
@@ -527,14 +576,6 @@ public final class Interpreter
         throw new Return(node.expression == null ? null : get(node.expression));
     }
 
-    // ---------------------------------------------------------------------------------------------
-
-    private Void varDecl (VarDeclarationNode node)
-    {
-        Scope scope = reactor.get(node, "scope");
-        assign(scope, node.name, get(node.initializer), reactor.get(node, "type"));
-        return null;
-    }
 
     // ---------------------------------------------------------------------------------------------
 

@@ -2,7 +2,8 @@ package norswap.sigh.interpreter;
 
 import norswap.sigh.scopes.RootScope;
 import norswap.sigh.scopes.Scope;
-import java.util.HashMap;
+
+import java.util.*;
 
 /**
  * The concrete instantiation of a {@link Scope} at runtime.
@@ -21,6 +22,8 @@ public final class ScopeStorage
     // ---------------------------------------------------------------------------------------------
 
     private final HashMap<String, Object> values = new HashMap<>();
+    private final HashMap<String, List<HashMap<String, Object>>> valuesFact = new HashMap<String,List<HashMap<String,Object>>>();
+
 
     // ---------------------------------------------------------------------------------------------
 
@@ -44,6 +47,8 @@ public final class ScopeStorage
         else
             throw new Error("[implementation bug] could not lookup name: " + name);
     }
+
+
 
     // ---------------------------------------------------------------------------------------------
 
@@ -76,8 +81,33 @@ public final class ScopeStorage
 
     // ---------------------------------------------------------------------------------------------
 
+    // prolog statement
     @Override public String toString() {
         return "ScopeStorage " + values.toString();
+    }
+
+    public void setExist(Scope scope, String keyValue,HashMap<String, Object> toStore) {
+        if(scope == this.scope){
+            if(valuesFact.get(keyValue) == null){
+                List<HashMap<String, Object>> newOne = new ArrayList<HashMap<String, Object>>();
+                newOne.add(toStore);
+                valuesFact.put(keyValue,newOne);
+            }else{
+                valuesFact.get(keyValue).add(toStore);
+            }
+        }
+        else
+            parent.setExist(scope, keyValue, toStore);
+    }
+
+    List<HashMap<String, Object>> getFact (Scope scope, String name)
+    {
+        if (scope == this.scope)
+            return valuesFact.get(name);
+        else if (parent != null)
+            return parent.getFact(scope, name);
+        else
+            throw new Error("[implementation bug] could not lookup name: " + name);
     }
 
     // ---------------------------------------------------------------------------------------------
