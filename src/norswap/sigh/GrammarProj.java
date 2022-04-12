@@ -270,6 +270,9 @@ public class GrammarProj extends Grammar {
     public rule fact_call = seq(_fact, reference, fact_args)
         .push($ -> new FactCallNode($.span(), $.$[0], $.$[1]));
 
+    // quest animal("dog", _, ?specie)
+    // legs = 4, specie = canine
+
     public rule questVar = seq(INTERROGATION, identifier)
         .push($ -> new QuestionVariableNode($.span(), $.$[0]));
 

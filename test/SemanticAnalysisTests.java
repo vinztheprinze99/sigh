@@ -203,11 +203,27 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
 
         successInput("var str: String = null; return print(str + 1)");
 
+        successInput("def animal(name: String, legs : Int, specie: String)"+
+            "quest animal(\"cat\", #, ?specie)");
+        successInput("def animal(name: String, legs : Int)"+
+            "quest animal(#, ?leg)");
+        successInput("def animal(name: String, legs : Int)"+
+            "quest animal(#, #)");
+        successInput("def animal(name: String, legs : Int)"+
+            "quest animal(?name, ?legs)");
+
         failureInputWith("return print(1)", "argument 0: expected String but got Int");
         failureInputWith("def animal(name: String, legs : Int)"+
             "fact animal(\"cat\")", "wrong number of arguments, expected 2 but got 1");
         failureInputWith("def animal(name: String, legs : Int)"+
             "fact animal(\"cat\", \"dog\")", "argument 1: expected Int but got String");
+
+        failureInputWith("def animal(name: String, legs : Int)"+
+            "quest animal(\"cat\")", "wrong number of arguments, expected 2 but got 1");
+        failureInputWith("def animal(name: String, legs : Int)"+
+            "quest animal(#, \"dog\")", "argument 1: expected Int but got String");
+        failureInputWith("def animal(name: String, legs : Int)"+
+            "quest animal(?name, \"dog\")", "argument 1: expected Int but got String");
     }
 
     // ---------------------------------------------------------------------------------------------

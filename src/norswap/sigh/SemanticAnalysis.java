@@ -112,6 +112,8 @@ public final class SemanticAnalysis
         walker.register(IntLiteralNode.class,           PRE_VISIT,  analysis::intLiteral);
         walker.register(FloatLiteralNode.class,         PRE_VISIT,  analysis::floatLiteral);
         walker.register(StringLiteralNode.class,        PRE_VISIT,  analysis::stringLiteral);
+        walker.register(AnyVariableNode.class,          PRE_VISIT,  analysis::anyVariableLiteral);
+        walker.register(QuestionVariableNode.class,     PRE_VISIT,  analysis::questionVariableLiteral);
         walker.register(ReferenceNode.class,            PRE_VISIT,  analysis::reference);
         walker.register(ConstructorNode.class,          PRE_VISIT,  analysis::constructor);
         walker.register(ArrayLiteralNode.class,         PRE_VISIT,  analysis::arrayLiteral);
@@ -176,6 +178,18 @@ public final class SemanticAnalysis
 
     private void stringLiteral (StringLiteralNode node) {
         R.set(node, "type", StringType.INSTANCE);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private void anyVariableLiteral (AnyVariableNode node) {
+        R.set(node, "type", AnyType.INSTANCE);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private void questionVariableLiteral (QuestionVariableNode node) {
+        R.set(node, "type", QuestionType.INSTANCE);
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -957,10 +971,53 @@ public final class SemanticAnalysis
 
     // ---------------------------------------------------------------------------------------------
 
-    private void questionCall(QuestionCallNode node){
+    private void questionCall(QuestionCallNode node) {
         this.inferenceContext = node;
 
+        Attribute[] dependencies = new Attribute[node.arguments.size() + 1];
+        dependencies[0] = node.def.attr("type");
+        forEachIndexed(node.arguments, (i, arg) -> {
+            dependencies[i + 1] = arg.attr("type");
+            R.set(arg, "index", i);
+        });
+
+        R.rule()
+            .using(dependencies)
+            .by(r -> {
+                Type maybeDefType = r.get(0);
+                if (!(maybeDefType instanceof DefType)) {
+                    r.error("trying to call a non-fact expression: " + node.def, node.def);
+                    return;
+                }
+
+                DefType defType = cast(maybeDefType);
+
+                Type[] params = defType.paramTypes;
+                List<ExpressionNode> args = node.arguments;
+
+                if (params.length != args.size())
+                    r.errorFor(format("wrong number of arguments, expected %d but got %d",
+                            params.length, args.size()),
+                        node);
+
+                int checkedArgs = Math.min(params.length, args.size());
+
+                for (int i = 0; i < checkedArgs; ++i) {
+                    Type argType = r.get(i + 1);
+                    Type paramType = defType.paramTypes[i];
+                    if(argType instanceof AnyType || argType instanceof QuestionType)
+                        continue;
+                    if (!isAssignableTo(argType, paramType))
+                        r.errorFor(format(
+                                "incompatible argument provided for argument %d: expected %s but got %s",
+                                i, paramType, argType),
+                            node.arguments.get(i));
+
+
+                }
+            });
     }
+
     // ---------------------------------------------------------------------------------------------
 
     private FunDeclarationNode currentFunction()
