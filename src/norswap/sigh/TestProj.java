@@ -16,8 +16,7 @@ import static norswap.utils.Util.cast;
 
 public final class TestProj {
     public static void main(String[] args) {
-        // String file = "fizzbuzz.si";
-        String file = "fizzbuzz.si";
+        String file = "prol.si";
         String path = Paths.get("examples/", file).toAbsolutePath().toString();
         String src = IO.slurp(path);
         GrammarProj grammar = new GrammarProj();

@@ -120,6 +120,7 @@ public final class SemanticAnalysis
         walker.register(ArrayAccessNode.class,          PRE_VISIT,  analysis::arrayAccess);
         walker.register(FunCallNode.class,              PRE_VISIT,  analysis::funCall);
         walker.register(FactCallNode.class,             PRE_VISIT,  analysis::factCall);
+        walker.register(QuestionCallNode.class,         PRE_VISIT,  analysis::questionCall);
         walker.register(UnaryExpressionNode.class,      PRE_VISIT,  analysis::unaryExpression);
         walker.register(BinaryExpressionNode.class,     PRE_VISIT,  analysis::binaryExpression);
         walker.register(AssignmentNode.class,           PRE_VISIT,  analysis::assignment);
@@ -921,11 +922,10 @@ public final class SemanticAnalysis
             R.set(arg, "index", i);
         });
 
-        R.rule(node, "type")
+        R.rule()
             .using(dependencies)
             .by(r -> {
                 Type maybeDefType = r.get(0);
-                System.out.println(maybeDefType.getClass());
                 if (!(maybeDefType instanceof DefType)) {
                     r.error("trying to call a non-fact expression: " + node.def, node.def);
                     return;
@@ -933,7 +933,6 @@ public final class SemanticAnalysis
 
                 DefType defType = cast(maybeDefType);
 
-                r.set(0, defType.paramTypes[0]);
                 Type[] params = defType.paramTypes;
                 List<ExpressionNode> args = node.arguments;
 
@@ -956,6 +955,12 @@ public final class SemanticAnalysis
             });
     }
 
+    // ---------------------------------------------------------------------------------------------
+
+    private void questionCall(QuestionCallNode node){
+        this.inferenceContext = node;
+
+    }
     // ---------------------------------------------------------------------------------------------
 
     private FunDeclarationNode currentFunction()

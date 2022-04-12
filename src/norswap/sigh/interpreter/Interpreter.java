@@ -71,6 +71,7 @@ public final class Interpreter
         visitor.register(FieldAccessNode.class,          this::fieldAccess);
         visitor.register(ArrayAccessNode.class,          this::arrayAccess);
         visitor.register(FunCallNode.class,              this::funCall);
+        visitor.register(FactCallNode.class,             this::factCall);
         visitor.register(UnaryExpressionNode.class,      this::unaryExpression);
         visitor.register(BinaryExpressionNode.class,     this::binaryExpression);
         visitor.register(AssignmentNode.class,           this::assignment);
@@ -463,6 +464,22 @@ public final class Interpreter
         HashMap<String, Object> struct = new HashMap<>();
         for (int i = 0; i < node.fields.size(); ++i)
             struct.put(node.fields.get(i).name, args[i]);
+        return struct;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private Object factCall(FactCallNode node){
+        return null;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private HashMap<String, Object> buildDef (DefDeclarationNode node, Object[] args)
+    {
+        HashMap<String, Object> struct = new HashMap<>();
+        for (int i = 0; i < node.parameters.size(); ++i)
+            struct.put(node.parameters.get(i).name, args[i]);
         return struct;
     }
 

@@ -48,6 +48,8 @@ public class GrammarProj extends Grammar {
     public rule DOT = word(".");
     public rule DOLLAR = word("$");
     public rule COMMA = word(",");
+    public rule INTERROGATION = word("?");
+    public rule HASHTAG = word("#");
 
     public rule _var = reserved("var");
     public rule _fun = reserved("fun");
@@ -58,6 +60,7 @@ public class GrammarProj extends Grammar {
     public rule _return = reserved("return");
     public rule _def = reserved("def");
     public rule _fact = reserved("fact");
+    public rule _quest = reserved("quest");
 
 
     // ========================= Lexical : Prolog project ====================================
@@ -208,7 +211,8 @@ public class GrammarProj extends Grammar {
             this.if_stmt,
             this.while_stmt,
             this.return_stmt,
-            this.expression_stmt));
+            this.expression_stmt,
+            this.question));
 
     public rule statements = statement.at_least(0)
             .as_list(StatementNode.class);
@@ -256,7 +260,7 @@ public class GrammarProj extends Grammar {
     public rule def_decl = seq(_def, identifier, LPAREN, parameters_at_least_one, RPAREN)
             .push($ -> new DefDeclarationNode($.span(), $.$[0], $.$[1]));
 
-    // fact animal("cat")
+    // fact animal("dog", 4)
     // fact is_parent("Father", "son")
 
     public rule expressions_at_least_one = lazy(() -> this.expression.sep(1, COMMA)
@@ -265,6 +269,19 @@ public class GrammarProj extends Grammar {
 
     public rule fact_call = seq(_fact, reference, fact_args)
         .push($ -> new FactCallNode($.span(), $.$[0], $.$[1]));
+
+    public rule questVar = seq(INTERROGATION, identifier)
+        .push($ -> new QuestionVariableNode($.span(), $.$[0]));
+
+    public rule anyVar = HASHTAG.push($ -> new AnyVariableNode($.span()));
+
+    public rule expressions_quest = lazy(() -> choice(expression, questVar, anyVar).sep(1, COMMA)
+        .as_list(ExpressionNode.class));
+
+    public rule quest_args = seq(LPAREN, expressions_quest, RPAREN);
+
+    public rule question = seq(_quest, reference, quest_args)
+        .push($ -> new QuestionCallNode($.span(), $.$[0], $.$[1]));
 
     public rule root = seq(ws, statement.at_least(1))
         .as_list(StatementNode.class)

@@ -129,6 +129,8 @@ public class GrammarTests extends AutumnTestFixture {
                 asList(new StringLiteralNode(null, "cat")))));
         successExpect("fact animal(1)", new FactCallNode(null, new ReferenceNode(null, "animal"),
             asList(intlit(1))));
+        successExpect("quest animal(\"cat\", #, ?specie)", new QuestionCallNode(null, new ReferenceNode(null, "animal"),
+            asList(new StringLiteralNode(null, "cat"), new AnyVariableNode(null), new QuestionVariableNode(null, "specie"))));
         successExpect("{ return }", new BlockNode(null, asList(new ReturnNode(null, null))));
 
 
