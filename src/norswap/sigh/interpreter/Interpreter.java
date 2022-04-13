@@ -76,7 +76,7 @@ public final class Interpreter
         // Prolog statement
         visitor.register(FactCallNode.class,              this::factCall);
         visitor.register(QuestionCallNode.class,           this::questionCall);
-        visitor.register(ConstructorFactNode.class,       this::factConstructor);
+        //visitor.register(ConstructorFactNode.class,       this::factConstructor);
 
         // statement groups & declarations
         visitor.register(RootNode.class,                 this::root);
@@ -458,9 +458,7 @@ public final class Interpreter
         // Gonna store the value of the fact to futur question
         ScopeStorage oldStorage = storage;
         Scope scope = reactor.get(decl, "scope");
-        System.out.println("OldStorage = " + oldStorage);
         storage = new ScopeStorage(scope, storage);
-        System.out.println("Storage = " + storage);
         storage.setExist(scope, keyValue, toStore);
         return null;
     }
@@ -572,7 +570,6 @@ public final class Interpreter
         || decl instanceof ParameterNode
         || decl instanceof SyntheticDeclarationNode
                 && ((SyntheticDeclarationNode) decl).kind() == DeclarationKind.VARIABLE){
-            System.out.println("Storage = " + (scope == rootScope ? rootStorage: storage));
             return scope == rootScope
                 ? rootStorage.get(scope, node.name)
                 : storage.get(scope, node.name);
