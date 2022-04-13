@@ -1,6 +1,8 @@
-def animal(name: String)
-def person(name: String)
-def pet(person: String, animal: String)
+def animal(name: String, leg: Int)
 
-fact animal("cat")
+fact animal("cat", 4)
+fact animal("dog", 4)
+fact animal("goose", 2)
+
+quest animal(?name, 4)
 

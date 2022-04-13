@@ -69,13 +69,13 @@ public final class Interpreter
         visitor.register(FieldAccessNode.class,          this::fieldAccess);
         visitor.register(ArrayAccessNode.class,          this::arrayAccess);
         visitor.register(FunCallNode.class,              this::funCall);
-        visitor.register(FactCallNode.class,             this::factCall);
         visitor.register(UnaryExpressionNode.class,      this::unaryExpression);
         visitor.register(BinaryExpressionNode.class,     this::binaryExpression);
         visitor.register(AssignmentNode.class,           this::assignment);
 
         // Prolog statement
         visitor.register(FactCallNode.class,              this::factCall);
+        visitor.register(QuestionCallNode.class,           this::questionCall);
         visitor.register(ConstructorFactNode.class,       this::factConstructor);
 
         // statement groups & declarations
@@ -445,6 +445,7 @@ public final class Interpreter
 
     private Void factCall (FactCallNode node)
     {
+        System.out.println(node.contents());
         // get declaration and arguments
         Object decl = get(node.def);
         node.arguments.forEach(this::run);
@@ -452,27 +453,41 @@ public final class Interpreter
 
         ReferenceNode r = (ReferenceNode)node.def;
         String keyValue = r.name;
-
-        HashMap<String,Object> toStore = buildFact(((FactConstructor) decl).declaration, args);
+        //((FactConstructor) decl).declaration
+        HashMap<String,Object> toStore = buildFact(((DefDeclarationNode) decl), args);
         // Gonna store the value of the fact to futur question
         ScopeStorage oldStorage = storage;
         Scope scope = reactor.get(decl, "scope");
+        System.out.println("OldStorage = " + oldStorage);
         storage = new ScopeStorage(scope, storage);
+        System.out.println("Storage = " + storage);
         storage.setExist(scope, keyValue, toStore);
         return null;
     }
 
-    private HashMap<String, Object> buildFact (FactDeclarationNode node, Object[] args)
+    private HashMap<String, Object> buildFact (DefDeclarationNode node, Object[] args)
     {
         HashMap<String, Object> node_declaration = new HashMap<>();
-        for (int i = 0; i < node.fields.size(); ++i)
-            node_declaration.put(node.fields.get(i).name, args[i]);
+        for (int i = 0; i < node.parameters.size(); ++i)
+            node_declaration.put(node.parameters.get(i).name, args[i]);
         return node_declaration;
     }
 
     private Constructor factConstructor (ConstructorFactNode node) {
         // guaranteed safe by semantic analysis
         return new Constructor(get(node.ref));
+    }
+
+    private Void questionCall(QuestionCallNode node){
+        Object decl = get(node.def);
+        ReferenceNode r = (ReferenceNode)node.def;
+        Scope scope = reactor.get(decl, "scope");
+        List<HashMap<String, Object>> facts = storage.getFact(scope, r.name);
+        System.out.println(facts.size());
+        for(HashMap<String, Object> hm : facts){
+            System.out.println(hm.entrySet());
+        }
+        return null;
     }
 
 
@@ -518,12 +533,6 @@ public final class Interpreter
 
     // ---------------------------------------------------------------------------------------------
 
-    private Object factCall(FactCallNode node){
-        return null;
-    }
-
-    // ---------------------------------------------------------------------------------------------
-
     private HashMap<String, Object> buildDef (DefDeclarationNode node, Object[] args)
     {
         HashMap<String, Object> struct = new HashMap<>();
@@ -562,10 +571,13 @@ public final class Interpreter
         if (decl instanceof VarDeclarationNode
         || decl instanceof ParameterNode
         || decl instanceof SyntheticDeclarationNode
-                && ((SyntheticDeclarationNode) decl).kind() == DeclarationKind.VARIABLE)
+                && ((SyntheticDeclarationNode) decl).kind() == DeclarationKind.VARIABLE){
+            System.out.println("Storage = " + (scope == rootScope ? rootStorage: storage));
             return scope == rootScope
                 ? rootStorage.get(scope, node.name)
                 : storage.get(scope, node.name);
+        }
+
 
         return decl; // structure or function
     }

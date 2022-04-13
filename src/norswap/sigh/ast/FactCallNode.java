@@ -18,7 +18,11 @@ public final class FactCallNode extends StatementNode
 
     @Override public String contents ()
     {
-        String args = arguments.size() == 0 ? "()" : "(...)";
+        String args = "( ";
+        for(ExpressionNode arg : this.arguments){
+            args += arg.contents()+"; ";
+        }
+        args += ")";
         return def.contents() + args;
     }
 }

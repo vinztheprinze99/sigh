@@ -9,6 +9,8 @@ public class FactDeclarationNode extends DeclarationNode
     public final String name;
     public final List<FieldDeclarationNode> fields;
 
+
+    @SuppressWarnings("unchecked")
     public FactDeclarationNode (Span span, Object name, Object fields) {
         super(span);
         this.name = Util.cast(name, String.class);

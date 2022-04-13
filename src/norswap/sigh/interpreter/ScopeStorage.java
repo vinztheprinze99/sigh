@@ -87,6 +87,9 @@ public final class ScopeStorage
     }
 
     public void setExist(Scope scope, String keyValue,HashMap<String, Object> toStore) {
+        if(valuesFact.isEmpty()) {
+            System.out.println("empty");
+        }
         if(scope == this.scope){
             if(valuesFact.get(keyValue) == null){
                 List<HashMap<String, Object>> newOne = new ArrayList<HashMap<String, Object>>();
