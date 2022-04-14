@@ -445,7 +445,6 @@ public final class Interpreter
 
     private Void factCall (FactCallNode node)
     {
-        System.out.println(node.contents());
         // get declaration and arguments
         Object decl = get(node.def);
         node.arguments.forEach(this::run);
@@ -456,6 +455,7 @@ public final class Interpreter
         //((FactConstructor) decl).declaration
         HashMap<String,Object> toStore = buildFact(((DefDeclarationNode) decl), args);
         // Gonna store the value of the fact to futur question
+
         ScopeStorage oldStorage = storage;
         Scope scope = reactor.get(decl, "scope");
         storage = new ScopeStorage(scope, storage);
@@ -481,7 +481,7 @@ public final class Interpreter
         ReferenceNode r = (ReferenceNode)node.def;
         Scope scope = reactor.get(decl, "scope");
         List<HashMap<String, Object>> facts = storage.getFact(scope, r.name);
-        System.out.println(facts.size());
+        System.out.println("size:"+facts.size());
         for(HashMap<String, Object> hm : facts){
             System.out.println(hm.entrySet());
         }

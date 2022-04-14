@@ -1,7 +1,9 @@
 package norswap.sigh.interpreter;
 
+import norswap.sigh.ast.FactCallNode;
 import norswap.sigh.scopes.RootScope;
 import norswap.sigh.scopes.Scope;
+import norswap.uranium.Reactor;
 
 import java.util.*;
 
@@ -87,8 +89,16 @@ public final class ScopeStorage
     }
 
     public void setExist(Scope scope, String keyValue,HashMap<String, Object> toStore) {
-        if(valuesFact.isEmpty()) {
-            System.out.println("empty");
+        List<HashMap<String, List<HashMap<String, Object>>>>ne = new ArrayList<HashMap<String, List<HashMap<String, Object>>>>();
+        ScopeStorage st = parent;
+        while(st != null){
+            ne.add(parent.valuesFact);
+            st = st.parent;
+        }
+        for(HashMap<String, List<HashMap<String, Object>>> hm : ne){
+            hm.forEach((k,v)->{
+                valuesFact.put(k, v);
+            });
         }
         if(scope == this.scope){
             if(valuesFact.get(keyValue) == null){

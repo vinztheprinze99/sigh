@@ -1,8 +1,11 @@
 def animal(name: String, leg: Int)
+def tete(name: String, leg: Int)
 
 fact animal("cat", 4)
 fact animal("dog", 4)
 fact animal("goose", 2)
+fact tete("deux", 6)
 
 quest animal(?name, 4)
+quest tete("deux", ?leg)
 
