@@ -106,7 +106,7 @@ public final class Interpreter
 
     // ---------------------------------------------------------------------------------------------
 
-    private Object run (SighNode node) {
+    private Object   run (SighNode node) {
         try {
             return visitor.apply(node);
         } catch (InterpreterException | Return | PassthroughException e) {
@@ -479,11 +479,29 @@ public final class Interpreter
     private Void questionCall(QuestionCallNode node){
         Object decl = get(node.def);
         ReferenceNode r = (ReferenceNode)node.def;
+        node.arguments.forEach(this::run);
+        Object[] args = map(node.arguments, new Object[0], visitor);
+        DefDeclarationNode def = ((DefDeclarationNode) decl);
         Scope scope = reactor.get(decl, "scope");
         List<HashMap<String, Object>> facts = storage.getFact(scope, r.name);
-        System.out.println("size:"+facts.size());
         for(HashMap<String, Object> hm : facts){
-            System.out.println(hm.entrySet());
+            String line = "";
+            boolean toPrint = true;
+            for (int i = 0; i < def.parameters.size(); ++i){
+                if(node.arguments.get(i) instanceof AnyVariableNode)
+                    continue;
+                if(node.arguments.get(i) instanceof QuestionVariableNode){
+                    QuestionVariableNode questNode = ((QuestionVariableNode) node.arguments.get(i));
+                    line += questNode.name + " = " + hm.get(questNode.name) +"; ";
+                }
+                else{
+                    if(!hm.get(def.parameters.get(i).name).equals(args[i])){
+                        toPrint = false;
+                    }
+                }
+            }
+            if(toPrint)
+                System.out.println(line);
         }
         return null;
     }
