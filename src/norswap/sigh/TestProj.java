@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import static norswap.utils.Util.cast;
 
 public final class TestProj {
+
     public static void main(String[] args) {
         String file = "prol.si";
         String path = Paths.get("examples/", file).toAbsolutePath().toString();

@@ -2,20 +2,20 @@ package norswap.sigh.ast;
 
 import norswap.autumn.positions.Span;
 import norswap.utils.Util;
+
 import java.util.List;
 
-public class FactDeclarationNode extends ProlNode
-
-{
+public class RuleDeclarationNode extends ProlNode{
     public final String name;
-    public final List<FieldDeclarationNode> fields;
-
+    public final List<ParameterNode> params;
+    public final ExpressionNode rule;
 
     @SuppressWarnings("unchecked")
-    public FactDeclarationNode (Span span, Object name, Object fields) {
+    public RuleDeclarationNode(Span span, Object name, Object params, Object rule) {
         super(span);
         this.name = Util.cast(name, String.class);
-        this.fields = Util.cast(fields, List.class);
+        this.params = Util.cast(params, List.class);
+        this.rule = Util.cast(rule, ExpressionNode.class);
     }
 
     @Override public String name () {
@@ -23,10 +23,10 @@ public class FactDeclarationNode extends ProlNode
     }
 
     @Override public String contents () {
-        return "fact " + name;
+        return "rule " + name;
     }
 
     @Override public String declaredThing () {
-        return "fact";
+        return "rule";
     }
 }

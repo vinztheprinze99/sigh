@@ -61,6 +61,7 @@ public class GrammarProj extends Grammar {
     public rule _def = reserved("def");
     public rule _fact = reserved("fact");
     public rule _quest = reserved("quest");
+    public rule _rule = reserved("rule");
 
 
     // ========================= Lexical : Prolog project ====================================
@@ -207,6 +208,7 @@ public class GrammarProj extends Grammar {
             this.fun_decl,
             this.def_decl,
             this.fact_call,
+            this.rule_call,
             this.struct_decl,
             this.if_stmt,
             this.while_stmt,
@@ -265,9 +267,9 @@ public class GrammarProj extends Grammar {
 
     public rule expressions_at_least_one = lazy(() -> this.expression.sep(1, COMMA)
         .as_list(ExpressionNode.class));
-    public rule fact_args = seq(LPAREN, expressions_at_least_one, RPAREN);
+    public rule prol_args = seq(LPAREN, expressions_at_least_one, RPAREN);
 
-    public rule fact_call = seq(_fact, reference, fact_args)
+    public rule fact_call = seq(_fact, reference, prol_args)
         .push($ -> new FactCallNode($.span(), $.$[0], $.$[1]));
 
     // quest animal("dog", _, ?specie)
@@ -290,6 +292,20 @@ public class GrammarProj extends Grammar {
         .as_list(StatementNode.class)
         .push($ -> new RootNode($.span(), $.$[0]));
 
+    // rule pet(X : String, Y : String) :- animal(X) && person(Y) && house(X,Y,Z)
+    public rule prol_call = seq(reference, prol_args).push($ -> new ProlCallNode($.span(), $.$[0], $.$[1]));
+    public rule and_prol = left_expression()
+            .operand(prol_call)
+            .infix(AMP_AMP.as_val(BinaryOperator.AND),
+                    $ -> new BinaryExpressionNode($.span(), $.$[0], $.$[1], $.$[2]));
+    public rule or_prol = left_expression()
+            .operand(and_prol)
+            .infix(BAR_BAR.as_val(BinaryOperator.OR),
+                    $ -> new BinaryExpressionNode($.span(), $.$[0], $.$[1], $.$[2]));
+    public rule prol_expression = seq(or_prol);
+
+    public rule rule_call = seq(_rule, identifier, LPAREN, parameters_at_least_one, RPAREN, EQUALS, prol_expression)
+            .push($ -> new RuleDeclarationNode($.span(), $.$[0], $.$[1], $.$[2]));
     @Override
     public rule root() {
         return root;

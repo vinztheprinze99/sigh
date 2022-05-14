@@ -113,6 +113,20 @@ public class GrammarTests extends AutumnTestFixture {
         successExpect("def animal(name: String)", new DefDeclarationNode(null, "animal",
             asList(new ParameterNode(null, "name", new SimpleTypeNode(null, "String")))));
 
+        // Test for rule declaration
+        successExpect("rule person(name: String) = human(name)",
+                new RuleDeclarationNode(null, "person",
+                        asList(new ParameterNode(null, "name", new SimpleTypeNode(null, "String"))),
+                new ProlCallNode(null, new ReferenceNode(null, "human"), asList(new ReferenceNode(null, "name")))));
+        successExpect("rule pet(personName: String, animalName: String) = person(personName) && animal(animalName)",
+                new RuleDeclarationNode(null, "pet",
+                        asList(new ParameterNode(null, "personName", new SimpleTypeNode(null, "String")),
+                                new ParameterNode(null, "animalName", new SimpleTypeNode(null, "String"))),
+                        new BinaryExpressionNode(null,
+                                new ProlCallNode(null, new ReferenceNode(null, "person"), asList(new ReferenceNode(null, "personName"))),
+                                BinaryOperator.AND,
+                                new ProlCallNode(null, new ReferenceNode(null, "animal"), asList(new ReferenceNode(null, "animalName"))))));
+
     }
 
     // ---------------------------------------------------------------------------------------------

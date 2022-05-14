@@ -12,16 +12,16 @@ import norswap.uranium.Reactor;
 import norswap.uranium.Rule;
 import norswap.utils.visitors.ReflectiveFieldWalker;
 import norswap.utils.visitors.Walker;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import org.w3c.dom.Attr;
+
+import java.sql.Ref;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static norswap.sigh.ast.BinaryOperator.*;
 import static norswap.utils.Util.cast;
-import static norswap.utils.Vanilla.forEachIndexed;
-import static norswap.utils.Vanilla.list;
+import static norswap.utils.Vanilla.*;
 import static norswap.utils.visitors.WalkVisitType.POST_VISIT;
 import static norswap.utils.visitors.WalkVisitType.PRE_VISIT;
 
@@ -122,6 +122,7 @@ public final class SemanticAnalysis
         walker.register(ArrayAccessNode.class,          PRE_VISIT,  analysis::arrayAccess);
         walker.register(FunCallNode.class,              PRE_VISIT,  analysis::funCall);
         walker.register(FactCallNode.class,             PRE_VISIT,  analysis::factCall);
+        walker.register(ProlCallNode.class,             PRE_VISIT,  analysis::prolCall);
         walker.register(QuestionCallNode.class,         PRE_VISIT,  analysis::questionCall);
         walker.register(UnaryExpressionNode.class,      PRE_VISIT,  analysis::unaryExpression);
         walker.register(BinaryExpressionNode.class,     PRE_VISIT,  analysis::binaryExpression);
@@ -143,6 +144,8 @@ public final class SemanticAnalysis
         // Declaration of prolog
         walker.register(DefDeclarationNode.class,       PRE_VISIT,  analysis::defDecl);
         walker.register(DefDeclarationNode.class,       POST_VISIT, analysis::popScope);
+        walker.register(RuleDeclarationNode.class,      PRE_VISIT,  analysis::ruleDecl);
+        walker.register(RuleDeclarationNode.class,      POST_VISIT,  analysis::popScope);
 
         walker.register(RootNode.class,                 POST_VISIT, analysis::popScope);
         walker.register(BlockNode.class,                POST_VISIT, analysis::popScope);
@@ -925,11 +928,109 @@ public final class SemanticAnalysis
 
     // ---------------------------------------------------------------------------------------------
 
+    private void ruleDecl(RuleDeclarationNode node){
+        this.inferenceContext = node;
+
+        scope.declare(node.name, node);
+        scope = new Scope(node, scope);
+        R.set(node, "scope", scope);
+
+        // add rule definition in memory
+        Attribute[] dependencies = new Attribute[node.params.size()];
+        String[] names = new String[node.params.size()];
+        forEachIndexed(node.params, (i, param) -> {
+                    dependencies[i] = param.attr("type");
+                    names[i] = param.name;
+                }
+               );
+
+        R.rule(node, "type")
+                .using(dependencies)
+                .by (r -> {
+                    Type[] paramTypes = new Type[node.params.size()];
+                    for (int i = 0; i < paramTypes.length; ++i)
+                        paramTypes[i] = r.get(i);
+                    r.set(0, new DefType(paramTypes));
+                });
+        // check that the rule works
+        Map<String, Type> fieldsMap = new HashMap<>();
+        Queue<ExpressionNode> queue = new LinkedList<>();
+        queue.add(node.rule);
+
+
+        R.rule()
+                .using(dependencies)
+                .by(r -> {
+                    for(int i = 0; i < node.params.size(); i++){
+                        Type type = r.get(i);
+                        String name = names[i];
+                        fieldsMap.put(name, type);
+                    }
+                    while(!queue.isEmpty()){
+                        ExpressionNode topNode = queue.poll();
+                        if(topNode instanceof BinaryExpressionNode){
+                            queue.add(((BinaryExpressionNode) topNode).left);
+                            queue.add(((BinaryExpressionNode) topNode).right);
+                        }
+                        else{
+                            ProlCallNode prolNode = cast(topNode);
+                            Attribute attribute = prolNode.function.attr("type");
+                            Type maybeDefType = R.get(attribute);
+                            System.out.println("hello");
+                            System.out.println("test");
+                            System.out.println(R.get(attribute).getClass());
+                            System.out.println("nope");
+                            System.out.println(maybeDefType.toString());
+                            if (!(maybeDefType instanceof DefType)) {
+                                r.error("trying to call a non-prol expression: " + prolNode.function, prolNode.function);
+                                return;
+                            }
+                            DefType defType = cast(maybeDefType);
+
+                            Type[] params = defType.paramTypes;
+                            List<ReferenceNode> args = prolNode.arguments;
+
+                            if (params.length != args.size())
+                                r.errorFor(format("wrong number of arguments, expected %d but got %d",
+                                                params.length, args.size()),
+                                        prolNode);
+
+                            int checkedArgs = Math.min(params.length, args.size());
+
+                            for (int i = 0; i < checkedArgs; ++i) {
+                                ReferenceNode ref = args.get(i);
+                                Type argType = cast(fieldsMap.get(ref.name));
+                                Type paramType = defType.paramTypes[i];
+                                if(argType == null){
+                                    fieldsMap.put(ref.name, paramType);
+                                }
+                                else{
+                                    if (!isAssignableTo(argType, paramType))
+                                        r.errorFor(format(
+                                                        "incompatible argument provided for argument %d: expected %s but got %s",
+                                                        i, paramType, argType),
+                                                prolNode.arguments.get(i));
+                                }
+
+                            }
+                        }
+                    }
+                });
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private void prolCall(ProlCallNode node){
+        return;
+    }
+    // ---------------------------------------------------------------------------------------------
+
     private void factCall (FactCallNode node)
     {
         this.inferenceContext = node;
 
         Attribute[] dependencies = new Attribute[node.arguments.size() + 1];
+        System.out.println(node.def.getClass());
         dependencies[0] = node.def.attr("type");
         forEachIndexed(node.arguments, (i, arg) -> {
             dependencies[i+1] = arg.attr("type");
