@@ -4,7 +4,7 @@ import norswap.autumn.positions.Span;
 import norswap.utils.Util;
 import java.util.List;
 
-public class DefDeclarationNode extends DeclarationNode
+public class DefDeclarationNode extends ProlNode
 {
     public final String name;
     public final List<ParameterNode> parameters;

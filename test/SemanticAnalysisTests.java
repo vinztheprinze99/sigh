@@ -212,8 +212,25 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
         successInput("def animal(name: String, legs : Int)"+
             "quest animal(?name, ?legs)");
 
+        successInput("def animal(name: String, legs : Int)"+
+                "rule quadrupeded(name: String) = animal(name, 4)" +
+                "quest quadrupeded(?name)");
+
         successInput("def human(name : String)"+
-                "rule person(name : String) = human(name)");
+                "rule friends(name1 : String, name2 : String) = human(name1) && human(name2)");
+
+        successInput("def animal(name: String, legs : Int)"+
+                "rule quadrupeded(name: String) = animal(name, 4)");
+
+        failureInputWith("def human(name : String)"+
+                "rule friends(name1 : String, name2 : String) = human(name1) && human(name2, name1)",
+                "wrong number of arguments for prolNode with function name : Reference(human), expected 1 but got 2");
+        failureInputWith("def human(name : String)"+
+                        "rule friends(name1 : String, name2 : Int) = human(name1) && human(name2)",
+                "incompatible argument provided for argument 0 for prolNode with function name : Reference(human): expected String but got Int");
+        failureInputWith("def human(name : String)"+
+                        "rule friends(name1 : String, name2 : Int) = human(name1, name2) && human(name2, name1)",
+                "wrong number of arguments for prolNode with function name : Reference(human), expected 1 but got 2");
 
         failureInputWith("return print(1)", "argument 0: expected String but got Int");
         failureInputWith("def animal(name: String, legs : Int)"+

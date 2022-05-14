@@ -954,74 +954,74 @@ public final class SemanticAnalysis
                 });
         // check that the rule works
         Map<String, Type> fieldsMap = new HashMap<>();
-        Queue<ExpressionNode> queue = new LinkedList<>();
-        queue.add(node.rule);
-
-
         R.rule()
                 .using(dependencies)
                 .by(r -> {
-                    for(int i = 0; i < node.params.size(); i++){
-                        Type type = r.get(i);
-                        String name = names[i];
-                        fieldsMap.put(name, type);
-                    }
-                    while(!queue.isEmpty()){
-                        ExpressionNode topNode = queue.poll();
-                        if(topNode instanceof BinaryExpressionNode){
-                            queue.add(((BinaryExpressionNode) topNode).left);
-                            queue.add(((BinaryExpressionNode) topNode).right);
-                        }
-                        else{
-                            ProlCallNode prolNode = cast(topNode);
-                            Attribute attribute = prolNode.function.attr("type");
-                            Type maybeDefType = R.get(attribute);
-                            System.out.println("hello");
-                            System.out.println("test");
-                            System.out.println(R.get(attribute).getClass());
-                            System.out.println("nope");
-                            System.out.println(maybeDefType.toString());
-                            if (!(maybeDefType instanceof DefType)) {
-                                r.error("trying to call a non-prol expression: " + prolNode.function, prolNode.function);
-                                return;
+                            for (int i = 0; i < node.params.size(); i++) {
+                                Type type = r.get(i);
+                                String name = names[i];
+                                fieldsMap.put(name, type);
                             }
-                            DefType defType = cast(maybeDefType);
-
-                            Type[] params = defType.paramTypes;
-                            List<ReferenceNode> args = prolNode.arguments;
-
-                            if (params.length != args.size())
-                                r.errorFor(format("wrong number of arguments, expected %d but got %d",
-                                                params.length, args.size()),
-                                        prolNode);
-
-                            int checkedArgs = Math.min(params.length, args.size());
-
-                            for (int i = 0; i < checkedArgs; ++i) {
-                                ReferenceNode ref = args.get(i);
-                                Type argType = cast(fieldsMap.get(ref.name));
-                                Type paramType = defType.paramTypes[i];
-                                if(argType == null){
-                                    fieldsMap.put(ref.name, paramType);
-                                }
-                                else{
-                                    if (!isAssignableTo(argType, paramType))
-                                        r.errorFor(format(
-                                                        "incompatible argument provided for argument %d: expected %s but got %s",
-                                                        i, paramType, argType),
-                                                prolNode.arguments.get(i));
-                                }
-
-                            }
-                        }
-                    }
                 });
+
+        semAnalysisRule(node.rule);
+    }
+
+    private void semAnalysisRule(ExpressionNode node){
+        if(node instanceof BinaryExpressionNode){
+           semAnalysisRule(((BinaryExpressionNode) node).left);
+           semAnalysisRule(((BinaryExpressionNode) node).right);
+
+        }
+        else {
+            System.out.println("Sem Analysis Prol Node");
+            ProlCallNode prolNode = cast(node);
+            Attribute[] dependencies = new Attribute[prolNode.arguments.size()+1];
+            dependencies[0] = prolNode.function.attr("type");
+            forEachIndexed(prolNode.arguments, (i, arg) ->{
+                dependencies[i+1] = arg.attr("type");
+            });
+            R.rule()
+                    .using(dependencies)
+                    .by(r -> {
+                        Type maybeDefType = r.get(0);
+                        if (!(maybeDefType instanceof DefType)) {
+                            r.error("trying to call a non-prol expression: " + prolNode.function, prolNode.function);
+                            return;
+                        }
+                        DefType defType = cast(maybeDefType);
+
+                        Type[] params = defType.paramTypes;
+                        List<ExpressionNode> args = prolNode.arguments;
+
+                        if (params.length != args.size()) {
+                            r.errorFor(format("wrong number of arguments for prolNode with function name : %s, expected %d but got %d",
+                                            prolNode.function, params.length, args.size()),
+                                    prolNode);
+                            return;
+                        }
+                        int checkedArgs = Math.min(params.length, args.size());
+                        for (int i = 0; i < checkedArgs; ++i) {
+                            Type paramType = defType.paramTypes[i];
+                            Type argType = r.get(i+1);
+                            if (!isAssignableTo(argType, paramType)){
+                                r.errorFor(format(
+                                        "incompatible argument provided for argument %d for prolNode with function name : %s: expected %s but got %s",
+                                                i, prolNode.function, paramType, argType),
+                                        prolNode.arguments.get(i));
+                            }
+
+                        }
+
+                    });
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
 
     private void prolCall(ProlCallNode node){
-        return;
+        R.rule(node, "type")
+                .by(r -> r.set(0, BoolType.INSTANCE));
     }
     // ---------------------------------------------------------------------------------------------
 
@@ -1030,7 +1030,7 @@ public final class SemanticAnalysis
         this.inferenceContext = node;
 
         Attribute[] dependencies = new Attribute[node.arguments.size() + 1];
-        System.out.println(node.def.getClass());
+        //System.out.println(node.def.getClass());
         dependencies[0] = node.def.attr("type");
         forEachIndexed(node.arguments, (i, arg) -> {
             dependencies[i+1] = arg.attr("type");

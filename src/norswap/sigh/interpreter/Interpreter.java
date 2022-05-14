@@ -10,14 +10,17 @@ import norswap.sigh.types.IntType;
 import norswap.sigh.types.StringType;
 import norswap.sigh.types.Type;
 import norswap.uranium.Reactor;
+import norswap.uranium.Rule;
 import norswap.utils.Util;
 import norswap.utils.exceptions.Exceptions;
 import norswap.utils.exceptions.NoStackException;
 import norswap.utils.visitors.ValuedVisitor;
 
+import java.sql.Array;
 import java.util.*;
 
 import static norswap.utils.Util.cast;
+import static norswap.utils.Util.lines;
 import static norswap.utils.Vanilla.*;
 
 /**
@@ -476,37 +479,98 @@ public final class Interpreter
         return new Constructor(get(node.ref));
     }
 
+
+
     private Void questionCall(QuestionCallNode node){
         Object decl = get(node.def);
-        ReferenceNode r = (ReferenceNode)node.def;
         node.arguments.forEach(this::run);
         Object[] args = map(node.arguments, new Object[0], visitor);
-        DefDeclarationNode def = ((DefDeclarationNode) decl);
-        Scope scope = reactor.get(decl, "scope");
-        List<HashMap<String, Object>> facts = storage.getFact(scope, r.name);
-        for(HashMap<String, Object> hm : facts){
+
+        if (decl == Null.INSTANCE)
+            throw new PassthroughException(new NullPointerException("calling a null question"));
+
+        List<Map<String, Object>> toPrint = new ArrayList<>();
+        if(decl instanceof  DefDeclarationNode)
+            toPrint = getFact(node, decl, args);
+        else if ( decl instanceof RuleDeclarationNode){
+            toPrint = getRule(node, decl, args);
+        }
+        for(Map<String, Object> it : toPrint){
             String line = "";
-            boolean toPrint = true;
-            for (int i = 0; i < def.parameters.size(); ++i){
-                if(node.arguments.get(i) instanceof AnyVariableNode)
-                    continue;
-                if(node.arguments.get(i) instanceof QuestionVariableNode){
-                    QuestionVariableNode questNode = ((QuestionVariableNode) node.arguments.get(i));
-                    line += questNode.name + " = " + hm.get(questNode.name) +"; ";
-                }
-                else{
-                    if(!hm.get(def.parameters.get(i).name).equals(args[i])){
-                        toPrint = false;
-                    }
-                }
+            for(String key : it.keySet()){
+                line += key + " = " + it.get(key) + ";";
             }
-            if(toPrint)
-                System.out.println(line);
+            System.out.println(line);
         }
         return null;
     }
 
+    private List<Map<String, Object>> getFact(QuestionCallNode node, Object decl, Object[] args){
+        ReferenceNode r = (ReferenceNode)node.def;
+        DefDeclarationNode def = cast(decl);
+        Scope scope = reactor.get(decl, "scope");
+        List<HashMap<String, Object>> facts = storage.getFact(scope, r.name);
+        List<Map<String, Object>> toRet = new ArrayList<>();
+        for(HashMap<String, Object> hm : facts){
+            Map<String, Object> addFact = new HashMap<>();
+            boolean toAdd = true;
+            for (int i = 0; i < def.parameters.size(); ++i){
+                if(node.arguments.get(i) instanceof AnyVariableNode) // #
+                    continue;
+                if(node.arguments.get(i) instanceof QuestionVariableNode){ // ?
+                    QuestionVariableNode questNode = cast(node.arguments.get(i));
+                    addFact.put(questNode.name, hm.get(questNode.name));
+                }
+                else{ // variables
+                    if(!hm.get(def.parameters.get(i).name).equals(args[i])){
+                        toAdd = false;
+                    }
+                }
+            }
+            if(toAdd)
+                toRet.add(addFact);
+        }
+        return toRet;
+    }
 
+    private List<Map<String, Object>> getRule(QuestionCallNode node, Object decl, Object[] args){
+        ReferenceNode r = (ReferenceNode)node.def;
+        RuleDeclarationNode def = cast(decl);
+        Scope scope = reactor.get(decl, "scope");
+
+        List<Map<String, Object>> toRet = new ArrayList<>();
+        Queue<ExpressionNode> queue = new LinkedList<>();
+        ExpressionNode rule = cast(def.rule);
+        queue.add(rule);
+        while(!queue.isEmpty()){
+            ExpressionNode topNode = queue.poll();
+            if(topNode instanceof BinaryExpressionNode){
+                BinaryExpressionNode beNode = cast(topNode);
+                queue.add(beNode.left);
+                queue.add(beNode.operator);
+                queue.add(beNode.right);
+            }
+            if(topNode instanceof ProlCallNode){
+                ProlCallNode ruleNode = cast(rule);
+                Object declFunc = get(ruleNode.function);
+                ReferenceNode funct = (ReferenceNode)ruleNode.function;
+                if(declFunc instanceof DefDeclarationNode){
+
+                }
+            }else if(rule instanceof BinaryExpressionNode){
+
+            }
+
+        }
+        return toRet;
+    }
+
+    private List<Map<String, Object>> getFactRec(DefDeclarationNode node, Object decl, Object[] args){
+        return null;
+    }
+    private List<Map<String, Object>> getRuleRec(RuleDeclarationNode node, Object decl, Object[] args){
+        return null;
+    }
     // ---------------------------------------------------------------------------------------------
 
     private Object builtin (String name, Object[] args)

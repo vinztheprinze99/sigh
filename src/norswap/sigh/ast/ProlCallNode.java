@@ -9,7 +9,7 @@ import java.util.List;
 public class ProlCallNode extends ExpressionNode {
 
     public final ExpressionNode function;
-    public final List<ReferenceNode> arguments;
+    public final List<ExpressionNode> arguments;
 
     @SuppressWarnings("unchecked")
     public ProlCallNode (Span span, Object function, Object arguments) {
