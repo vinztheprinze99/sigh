@@ -6,15 +6,11 @@ import norswap.utils.Util;
 import java.util.List;
 
 public class RuleDeclarationNode extends ProlNode{
-    public final String name;
-    public final List<ParameterNode> params;
     public final ExpressionNode rule;
 
     @SuppressWarnings("unchecked")
-    public RuleDeclarationNode(Span span, Object name, Object params, Object rule) {
-        super(span);
-        this.name = Util.cast(name, String.class);
-        this.params = Util.cast(params, List.class);
+    public RuleDeclarationNode(Span span, Object name, Object parameters, Object rule) {
+        super(span, name, parameters);
         this.rule = Util.cast(rule, ExpressionNode.class);
     }
 

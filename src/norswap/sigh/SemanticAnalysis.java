@@ -12,7 +12,6 @@ import norswap.uranium.Reactor;
 import norswap.uranium.Rule;
 import norswap.utils.visitors.ReflectiveFieldWalker;
 import norswap.utils.visitors.Walker;
-import org.w3c.dom.Attr;
 
 import java.sql.Ref;
 import java.util.*;
@@ -936,9 +935,9 @@ public final class SemanticAnalysis
         R.set(node, "scope", scope);
 
         // add rule definition in memory
-        Attribute[] dependencies = new Attribute[node.params.size()];
-        String[] names = new String[node.params.size()];
-        forEachIndexed(node.params, (i, param) -> {
+        Attribute[] dependencies = new Attribute[node.parameters.size()];
+        String[] names = new String[node.parameters.size()];
+        forEachIndexed(node.parameters, (i, param) -> {
                     dependencies[i] = param.attr("type");
                     names[i] = param.name;
                 }
@@ -947,7 +946,7 @@ public final class SemanticAnalysis
         R.rule(node, "type")
                 .using(dependencies)
                 .by (r -> {
-                    Type[] paramTypes = new Type[node.params.size()];
+                    Type[] paramTypes = new Type[node.parameters.size()];
                     for (int i = 0; i < paramTypes.length; ++i)
                         paramTypes[i] = r.get(i);
                     r.set(0, new DefType(paramTypes));
@@ -957,24 +956,49 @@ public final class SemanticAnalysis
         R.rule()
                 .using(dependencies)
                 .by(r -> {
-                            for (int i = 0; i < node.params.size(); i++) {
+                            for (int i = 0; i < node.parameters.size(); i++) {
                                 Type type = r.get(i);
                                 String name = names[i];
                                 fieldsMap.put(name, type);
                             }
                 });
 
-        semAnalysisRule(node.rule);
+        Set<String> toCheck = semAnalysisRule(node.rule, node);
+
+        for(ParameterNode param : node.parameters){
+            if(!toCheck.contains(param.name)){
+                R.rule()
+                        .by(r -> {
+                            r.error("One of the conditions doesn't contain the parameter : " + param.name, node);
+                        });
+            }
+        }
     }
 
-    private void semAnalysisRule(ExpressionNode node){
+    private Set<String> semAnalysisRule(ExpressionNode node, RuleDeclarationNode nodeParent){
+        Set<String> toRet = new HashSet<>();
         if(node instanceof BinaryExpressionNode){
-           semAnalysisRule(((BinaryExpressionNode) node).left);
-           semAnalysisRule(((BinaryExpressionNode) node).right);
+            BinaryExpressionNode beNode = cast(node);
+            Set<String> left = semAnalysisRule(beNode.left, nodeParent);
+            Set<String> right = semAnalysisRule(beNode.right, nodeParent);
+            if(beNode.operator.equals(AND)){
+                left.addAll(right);
+                return left;
+            }else{ // operator == OR
+                for(ParameterNode param : nodeParent.parameters){
+                    System.out.println(param.name);
+                    if(!left.contains(param.name)){
+                        R.rule()
+                                .by(r -> {
+                              r.error("One of the conditions doesn't contain the parameter : " + param.name, nodeParent);
+                        });
+                    }
+                }
+                return right;
+            }
 
         }
         else {
-            System.out.println("Sem Analysis Prol Node");
             ProlCallNode prolNode = cast(node);
             Attribute[] dependencies = new Attribute[prolNode.arguments.size()+1];
             dependencies[0] = prolNode.function.attr("type");
@@ -1014,7 +1038,14 @@ public final class SemanticAnalysis
                         }
 
                     });
+            for(ExpressionNode exprNode : prolNode.arguments){
+                if(exprNode instanceof ReferenceNode){
+                    ReferenceNode ref = cast(exprNode);
+                    toRet.add(ref.name);
+                }
+            }
         }
+        return toRet;
     }
 
     // ---------------------------------------------------------------------------------------------

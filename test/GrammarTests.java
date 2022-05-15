@@ -124,6 +124,11 @@ public class GrammarTests extends AutumnTestFixture {
                         asList(new ParameterNode(null, "name", new SimpleTypeNode(null, "String"))),
                 new ProlCallNode(null, new ReferenceNode(null, "human"), asList(new ReferenceNode(null, "name")))));
 
+        successExpect("rule quadrupeded(name: String) = animal(name, 4)",
+                new RuleDeclarationNode(null, "quadrupeded",
+                        asList(new ParameterNode(null, "name", new SimpleTypeNode(null, "String"))),
+                        new ProlCallNode(null, new ReferenceNode(null, "animal"), asList(new ReferenceNode(null, "name"), intlit(4)))));
+
         successExpect("rule pet(personName: String, animalName: String) = person(personName) && animal(animalName)",
                 new RuleDeclarationNode(null, "pet",
                         asList(new ParameterNode(null, "personName", new SimpleTypeNode(null, "String")),
@@ -164,6 +169,21 @@ public class GrammarTests extends AutumnTestFixture {
                 new IfNode(null, new ReferenceNode(null, "true"),
                     new ReturnNode(null, intlit(2)),
                     new ReturnNode(null, intlit(3)))));
+
+        // OR is prioritized
+        successExpect("test = true && true || false && false",
+                new ExpressionStatementNode(null,
+                        new AssignmentNode(null, new ReferenceNode(null, "test"),
+                        new BinaryExpressionNode(null, new BinaryExpressionNode(null,
+                                new ReferenceNode(null, "true"), AND, new ReferenceNode(null, "true")), OR,
+                                new BinaryExpressionNode(null, new ReferenceNode(null, "false"), AND,
+                                        new ReferenceNode(null, "false"))))));
+        successExpect("test = true || true && false || false",
+                new ExpressionStatementNode(null, new AssignmentNode(null, new ReferenceNode(null, "test"),
+                        new BinaryExpressionNode(null, new BinaryExpressionNode(null, new ReferenceNode(null, "true"), OR,
+                                new BinaryExpressionNode(null, new ReferenceNode(null, "true"), AND,
+                                        new ReferenceNode(null, "false"))),
+                                OR, new ReferenceNode(null, "false")))));
 
         successExpect("while 1 < 2 { return } ", new WhileNode(null,
             new BinaryExpressionNode(null, intlit(1), LOWER, intlit(2)),

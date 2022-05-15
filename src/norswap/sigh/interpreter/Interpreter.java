@@ -17,6 +17,7 @@ import norswap.utils.exceptions.NoStackException;
 import norswap.utils.visitors.ValuedVisitor;
 
 import java.sql.Array;
+import java.sql.Ref;
 import java.util.*;
 
 import static norswap.utils.Util.cast;
@@ -455,7 +456,6 @@ public final class Interpreter
 
         ReferenceNode r = (ReferenceNode)node.def;
         String keyValue = r.name;
-        //((FactConstructor) decl).declaration
         HashMap<String,Object> toStore = buildFact(((DefDeclarationNode) decl), args);
         // Gonna store the value of the fact to futur question
 
@@ -483,17 +483,39 @@ public final class Interpreter
 
     private Void questionCall(QuestionCallNode node){
         Object decl = get(node.def);
+        ReferenceNode r = (ReferenceNode)node.def;
         node.arguments.forEach(this::run);
         Object[] args = map(node.arguments, new Object[0], visitor);
+        ProlNode def = cast(decl);
 
-        if (decl == Null.INSTANCE)
-            throw new PassthroughException(new NullPointerException("calling a null question"));
-
+        // get the facts
+        List<HashMap<String, Object>> facts = new ArrayList<>();
+        if(decl instanceof  DefDeclarationNode) {
+            Scope scope = reactor.get(decl, "scope");
+            facts = storage.getFact(scope, r.name);
+        }else if ( decl instanceof RuleDeclarationNode){
+            facts = getRule(cast(decl));
+        }
+        // verify the facts
         List<Map<String, Object>> toPrint = new ArrayList<>();
-        if(decl instanceof  DefDeclarationNode)
-            toPrint = getFact(node, decl, args);
-        else if ( decl instanceof RuleDeclarationNode){
-            toPrint = getRule(node, decl, args);
+        for(Map<String, Object> hm : facts) {
+            Map<String, Object> addFact = new HashMap<>();
+            boolean toAdd = true;
+            for (int i = 0; i < node.arguments.size(); ++i) {
+                if (node.arguments.get(i) instanceof AnyVariableNode) // #
+                    continue;
+                if (node.arguments.get(i) instanceof QuestionVariableNode) { // ?
+                    QuestionVariableNode questNode = cast(node.arguments.get(i));
+                    addFact.put(questNode.name, hm.get(def.parameters.get(i).name));
+                } else { // variables
+
+                    if (!hm.get(def.parameters.get(i).name).equals(args[i])) {
+                        toAdd = false;
+                    }
+                }
+            }
+            if (toAdd)
+                toPrint.add(addFact);
         }
         for(Map<String, Object> it : toPrint){
             String line = "";
@@ -505,24 +527,54 @@ public final class Interpreter
         return null;
     }
 
-    private List<Map<String, Object>> getFact(QuestionCallNode node, Object decl, Object[] args){
-        ReferenceNode r = (ReferenceNode)node.def;
-        DefDeclarationNode def = cast(decl);
-        Scope scope = reactor.get(decl, "scope");
-        List<HashMap<String, Object>> facts = storage.getFact(scope, r.name);
-        List<Map<String, Object>> toRet = new ArrayList<>();
-        for(HashMap<String, Object> hm : facts){
-            Map<String, Object> addFact = new HashMap<>();
+    private List<HashMap<String, Object>> getRule(RuleDeclarationNode node){
+        List<HashMap<String, Object>> toRet = new ArrayList<>();
+        List<HashMap<String, Object>> facts;
+
+        if(node.rule instanceof BinaryExpressionNode){
+            BinaryExpressionNode beNode = cast(node.rule);
+            facts = getBinary(beNode);
+        }else{ // node.rule instanceof ProlCallNode
+            ProlCallNode ruleNode = cast(node.rule);
+            Object declFunc = get(ruleNode.function);
+            ReferenceNode funct = (ReferenceNode)ruleNode.function;
+            if(declFunc instanceof DefDeclarationNode){
+                Scope scopeFunc = reactor.get(declFunc, "scope");
+                facts = verifyFacts(ruleNode, storage.getFact(scopeFunc, funct.name));
+            }else{ // if(declFunc instanceof RuleDeclarationNode)
+                facts = verifyFacts(ruleNode, getRule(cast(declFunc)));
+            }
+        }
+
+        for(Map<String, Object> hm : facts) {
+            HashMap<String, Object> addFact = new HashMap<>();
+            for (int i = 0; i < node.parameters.size(); ++i) {
+                addFact.put(node.parameters.get(i).name, hm.get(node.parameters.get(i).name));
+            }
+            toRet.add(addFact);
+        }
+
+        return toRet;
+    }
+
+    private List<HashMap<String, Object>> getBinary(BinaryExpressionNode node){
+        return new ArrayList<>();
+    }
+
+    private List<HashMap<String, Object>> verifyFacts(ProlCallNode node, List<HashMap<String, Object>> facts){
+        List<HashMap<String, Object>> toRet = new ArrayList<>();
+        Object declFunc = get(node.function);
+        ProlNode defFunc = cast(declFunc);
+        for(Map<String, Object> hm : facts) {
+            HashMap<String, Object> addFact = new HashMap<>();
             boolean toAdd = true;
-            for (int i = 0; i < def.parameters.size(); ++i){
-                if(node.arguments.get(i) instanceof AnyVariableNode) // #
-                    continue;
-                if(node.arguments.get(i) instanceof QuestionVariableNode){ // ?
-                    QuestionVariableNode questNode = cast(node.arguments.get(i));
-                    addFact.put(questNode.name, hm.get(questNode.name));
-                }
-                else{ // variables
-                    if(!hm.get(def.parameters.get(i).name).equals(args[i])){
+            for (int i = 0; i < node.arguments.size(); ++i) {
+                if (node.arguments.get(i) instanceof ReferenceNode) { // ?
+                    ReferenceNode refNode = cast(node.arguments.get(i));
+                    addFact.put(refNode.name, hm.get(defFunc.parameters.get(i).name));
+                }else{
+                    Object[] args = map(Arrays.asList(node.arguments.get(i)), new Object[0], visitor);
+                    if (!hm.get(defFunc.parameters.get(i).name).equals(args[0])) {
                         toAdd = false;
                     }
                 }
@@ -531,45 +583,6 @@ public final class Interpreter
                 toRet.add(addFact);
         }
         return toRet;
-    }
-
-    private List<Map<String, Object>> getRule(QuestionCallNode node, Object decl, Object[] args){
-        ReferenceNode r = (ReferenceNode)node.def;
-        RuleDeclarationNode def = cast(decl);
-        Scope scope = reactor.get(decl, "scope");
-
-        List<Map<String, Object>> toRet = new ArrayList<>();
-        Queue<ExpressionNode> queue = new LinkedList<>();
-        ExpressionNode rule = cast(def.rule);
-        queue.add(rule);
-        while(!queue.isEmpty()){
-            ExpressionNode topNode = queue.poll();
-            if(topNode instanceof BinaryExpressionNode){
-                BinaryExpressionNode beNode = cast(topNode);
-                queue.add(beNode.left);
-                queue.add(beNode.operator);
-                queue.add(beNode.right);
-            }
-            if(topNode instanceof ProlCallNode){
-                ProlCallNode ruleNode = cast(rule);
-                Object declFunc = get(ruleNode.function);
-                ReferenceNode funct = (ReferenceNode)ruleNode.function;
-                if(declFunc instanceof DefDeclarationNode){
-
-                }
-            }else if(rule instanceof BinaryExpressionNode){
-
-            }
-
-        }
-        return toRet;
-    }
-
-    private List<Map<String, Object>> getFactRec(DefDeclarationNode node, Object decl, Object[] args){
-        return null;
-    }
-    private List<Map<String, Object>> getRuleRec(RuleDeclarationNode node, Object decl, Object[] args){
-        return null;
     }
     // ---------------------------------------------------------------------------------------------
 

@@ -10,6 +10,7 @@ public class ExpressionStatementNode extends StatementNode
     public ExpressionStatementNode (Span span, Object expression) {
         super(span);
         this.expression = Util.cast(expression, ExpressionNode.class);
+        System.out.println(this.expression.contents());
     }
 
     @Override public String contents () {

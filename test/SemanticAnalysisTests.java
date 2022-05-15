@@ -219,8 +219,16 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
         successInput("def human(name : String)"+
                 "rule friends(name1 : String, name2 : String) = human(name1) && human(name2)");
 
+        successInput("def father(father : String, child : String)" +
+                "var Z : String = null "+
+                "rule siblings(X : String, Y : String) = father(X, Z) && father(Y, Z)");
+
         successInput("def animal(name: String, legs : Int)"+
                 "rule quadrupeded(name: String) = animal(name, 4)");
+
+        failureInputWith("def quadrupeded(name:String) "+
+                "rule test(hello: String, bonjour: String) = quadrupeded(hello)",
+                "One of the conditions doesn't contain the parameter : bonjour");
 
         failureInputWith("def human(name : String)"+
                 "rule friends(name1 : String, name2 : String) = human(name1) && human(name2, name1)",

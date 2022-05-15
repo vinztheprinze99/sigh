@@ -1,14 +1,15 @@
-def animal(name: String, leg: Int)
+def animal(animal: String, leg: Int)
 def tete(name: String, leg: Int)
 
-rule test(name : String) = quadrupeded(name)
-rule quadrupeded(name: String) = test(name)
+rule quadrupeded(name: String, leg: Int) = animal(name,leg)
+rule test(hello: String, bonjour: Int) = quadrupeded(hello, bonjour)
 
 fact animal("cat", 4)
 fact animal("dog", 4)
 fact animal("goose", 2)
 fact tete("deux", 6)
 
-quest animal(?name, 4)
+quest animal(?hello, 4)
 quest tete("deux", ?leg)
+quest test(?name, ?bonjour)
 

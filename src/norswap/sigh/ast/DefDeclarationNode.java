@@ -6,15 +6,11 @@ import java.util.List;
 
 public class DefDeclarationNode extends ProlNode
 {
-    public final String name;
-    public final List<ParameterNode> parameters;
-
     @SuppressWarnings("unchecked")
     public DefDeclarationNode
             (Span span, Object name, Object parameters) {
-        super(span);
-        this.name = Util.cast(name, String.class);
-        this.parameters = Util.cast(parameters, List.class);
+        super(span,name, parameters);
+
     }
 
     @Override public String name () {
