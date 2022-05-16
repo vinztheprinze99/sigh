@@ -1,15 +1,37 @@
 def animal(animal: String, leg: Int)
 def tete(name: String, leg: Int)
 
-rule quadrupeded(name: String, leg: Int) = animal(name,leg)
-rule test(hello: String, bonjour: Int) = quadrupeded(hello, bonjour)
+def father(parent : String, child : String)
+def mother(parent : String, child : String)
 
-fact animal("cat", 4)
+var parentName : String = null
+rule siblings(x : String, y : String) = father(parentName, x) && father(parentName, y) || mother(parentName, x) && mother(parentName, y)
+rule child(childName : String) = father(parentName, childName) || mother(parentName, childName)
+
+def human(name : String)
+
+rule likes(x: String, y : String) = human(x) && human(y)
+
+rule quadrupeded(name: String) = animal(name,4)
+
+var cat : String = "cat"
+
+fact animal(cat, 4)
 fact animal("dog", 4)
 fact animal("goose", 2)
 fact tete("deux", 6)
 
-quest animal(?hello, 4)
-quest tete("deux", ?leg)
-quest test(?name, ?bonjour)
+fact father("Marc", "Jules")
+fact father("Marc", "Anne")
+fact mother("Audrey", "Jules")
+fact mother("Audrey", "Anne")
+fact father("Luc", "Pierre")
+
+quest father(?parent, ?child)
+print(" ")
+quest siblings(?X, ?Y)
+print(" ")
+quest child(?child)
+
+
 

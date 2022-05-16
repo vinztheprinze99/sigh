@@ -497,7 +497,7 @@ public final class Interpreter
             facts = getRule(cast(decl));
         }
         // verify the facts
-        List<Map<String, Object>> toPrint = new ArrayList<>();
+        Set<Map<String, Object>> toPrint = new HashSet<>();
         for(Map<String, Object> hm : facts) {
             Map<String, Object> addFact = new HashMap<>();
             boolean toAdd = true;
@@ -508,7 +508,6 @@ public final class Interpreter
                     QuestionVariableNode questNode = cast(node.arguments.get(i));
                     addFact.put(questNode.name, hm.get(def.parameters.get(i).name));
                 } else { // variables
-
                     if (!hm.get(def.parameters.get(i).name).equals(args[i])) {
                         toAdd = false;
                     }
@@ -558,7 +557,59 @@ public final class Interpreter
     }
 
     private List<HashMap<String, Object>> getBinary(BinaryExpressionNode node){
-        return new ArrayList<>();
+        List<HashMap<String, Object>> leftFacts, rightFacts;
+        if(node.left instanceof BinaryExpressionNode){
+            BinaryExpressionNode beNode = cast(node.left);
+            leftFacts = getBinary(beNode);
+        }else{ // node.rule instanceof ProlCallNode
+            ProlCallNode ruleNode = cast(node.left);
+            Object declFunc = get(ruleNode.function);
+            ReferenceNode funct = (ReferenceNode)ruleNode.function;
+            if(declFunc instanceof DefDeclarationNode){
+                Scope scopeFunc = reactor.get(declFunc, "scope");
+                leftFacts = verifyFacts(ruleNode, storage.getFact(scopeFunc, funct.name));
+            }else{ // if(declFunc instanceof RuleDeclarationNode)
+                leftFacts = verifyFacts(ruleNode, getRule(cast(declFunc)));
+            }
+        }
+        if(node.right instanceof BinaryExpressionNode){
+            BinaryExpressionNode beNode = cast(node.right);
+            rightFacts = getBinary(beNode);
+        }else{ // node.rule instanceof ProlCallNode
+            ProlCallNode ruleNode = cast(node.right);
+            Object declFunc = get(ruleNode.function);
+            ReferenceNode funct = (ReferenceNode)ruleNode.function;
+            if(declFunc instanceof DefDeclarationNode){
+                Scope scopeFunc = reactor.get(declFunc, "scope");
+                rightFacts = verifyFacts(ruleNode, storage.getFact(scopeFunc, funct.name));
+            }else{ // if(declFunc instanceof RuleDeclarationNode)
+                rightFacts = verifyFacts(ruleNode, getRule(cast(declFunc)));
+            }
+        }
+        if(node.operator.equals(BinaryOperator.OR)){
+            leftFacts.addAll(rightFacts);
+            return leftFacts;
+        }
+        List<HashMap<String, Object>> toRet = new ArrayList<>();
+        // operator == &&
+        for(HashMap<String, Object> hmLeft : leftFacts){
+            for(HashMap<String, Object> hmRight : rightFacts){
+                //hmLeft.putA
+                HashMap<String, Object> newHmLeft = new HashMap<>(hmLeft);
+                boolean toAdd = true;
+                for(String key : hmLeft.keySet()){
+                    if(hmRight.containsKey(key)){
+                        if(!hmLeft.get(key).equals(hmRight.get(key)))
+                            toAdd = false;
+                    }
+                }
+                if(toAdd){
+                    newHmLeft.putAll(hmRight);
+                    toRet.add(newHmLeft);
+                }
+            }
+        }
+        return toRet;
     }
 
     private List<HashMap<String, Object>> verifyFacts(ProlCallNode node, List<HashMap<String, Object>> facts){
